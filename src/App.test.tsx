@@ -39,11 +39,6 @@ let data = {
 //   });
 // });
 
-test('renders search input', () => {
-  render(<App />);
-  const inputElem = screen.getByPlaceholderText(/Title/i);
-  expect(inputElem).toBeInTheDocument();
-});
 
 test('renders correct results', () => {
   render(<App />);
@@ -79,4 +74,13 @@ test('renders correct MoviesList', () => {
   const movieElems = container.getAllByRole('listitem');
 
   expect(movieElems).toHaveLength(movies.length);
+});
+
+test('renders correct MoviesSearchForm', () => {
+  render(<App />);
+  const inputElem = screen.getByPlaceholderText(/Title/i);
+  const searchButton = screen.getByTitle(/Search/i);
+
+  expect(inputElem).toBeInTheDocument();
+  expect(searchButton).toBeInTheDocument();
 });
