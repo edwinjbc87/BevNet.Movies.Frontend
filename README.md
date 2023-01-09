@@ -1,4 +1,4 @@
-# Getting Started with Create React App
+# BevNet.Movies.Frontend
 
 This project was developed with [React](https://reactjs.org) and [Material UI](https://github.com/mui/material-ui). 
 It shows a list of movies and allows you to search by title using the search box and use the pager to move between each page.
