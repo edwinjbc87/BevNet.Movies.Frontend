@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
+import { renderHook } from '@testing-library/react-hooks';
 import useMovies from './hooks/useMovies';
 import App from './App';
 import MovieDetails from './components/movies/MovieDetails';
 import Movie from './entities/Movie';
 import MoviesList from './components/movies/MoviesList';
+import {getMovies} from './api/MoviesApi';
+import axios from 'axios';
+import MoviesSearchResult from './entities/MoviesSearchResult';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import MoviesApp from './components/movies/MoviesApp';
+import { JsxElement } from 'typescript';
 
-let data = {
+let sampledata:MoviesSearchResult = {
   "page": 1,
   "total_pages": 2,
   "per_page": 10,
@@ -30,27 +37,9 @@ let data = {
   ]
 };
 
-// jest.mock('./hooks/useMovies', () => {
-//   return jest.fn().mockImplementation(() => {
-//     return {
-//       search: jest.fn(),
-//       data: data
-//     };
-//   });
-// });
-
-
-test('renders correct results', () => {
-  render(<App />);
-  const inputElem:HTMLInputElement = screen.getByPlaceholderText(/Title/i);
-  inputElem.value = "Earth";
-  const searchButton = screen.getByTitle(/Search/i);
-  searchButton.click();
-  
-
-
-  expect(inputElem).toBeInTheDocument();
-});
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+//jest.mock('./hooks/useMovies');
 
 test('renders correct MovieDetails', () => {
   const movie:Movie = {title: 'Earth 1', year: '2001', imdbID: 'tt0000001'};
@@ -69,7 +58,7 @@ test('renders correct MovieDetails', () => {
 });
 
 test('renders correct MoviesList', () => {
-  const movies:Movie[] = data.data;
+  const movies:Movie[] = sampledata.data;
   const container = render(<MoviesList movies={movies} />);
   const movieElems = container.getAllByRole('listitem');
 
@@ -83,4 +72,23 @@ test('renders correct MoviesSearchForm', () => {
 
   expect(inputElem).toBeInTheDocument();
   expect(searchButton).toBeInTheDocument();
+});
+
+
+test('check useMovies returns axios response', async () => {
+  mockedAxios.get.mockResolvedValue({
+    data: sampledata,
+    status: 200,
+    statusText: 'OK',
+  });
+  const queryClient = new QueryClient();
+  const wrapper = ({ children }:{children:ReactNode}) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+
+  const { result, waitForNextUpdate } = renderHook(() => useMovies(), {wrapper});
+  await waitForNextUpdate();
+  expect(result.current.data).toEqual(sampledata);
 });
