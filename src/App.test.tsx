@@ -12,6 +12,8 @@ import MoviesSearchResult from './entities/MoviesSearchResult';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import MoviesApp from './components/movies/MoviesApp';
 import { JsxElement } from 'typescript';
+import MoviesSearchForm from './components/movies/MoviesSearchForm';
+import { waitFor } from '@testing-library/react';
 
 let sampledata:MoviesSearchResult = {
   "page": 1,
@@ -41,54 +43,72 @@ jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 //jest.mock('./hooks/useMovies');
 
-test('renders correct MovieDetails', () => {
-  const movie:Movie = {title: 'Earth 1', year: '2001', imdbID: 'tt0000001'};
-  const container = render(<MovieDetails movie={movie} />);
-
-  const titleElem = container.getByText(new RegExp(movie.title, 'i'));
-  const yearElem = container.getByText(new RegExp(movie.year, 'i'));
-  const imdbElem = container.getByText(new RegExp(movie.imdbID, 'i'));
-
-  expect(titleElem).toBeInTheDocument();
-  expect(yearElem).toBeInTheDocument();
-  expect(imdbElem).toBeInTheDocument();
-  expect(titleElem).toBeInstanceOf(HTMLHeadingElement);
-  expect(yearElem).toBeInstanceOf(HTMLParagraphElement);
-  expect(imdbElem).toBeInstanceOf(HTMLParagraphElement);
-});
-
-test('renders correct MoviesList', () => {
-  const movies:Movie[] = sampledata.data;
-  const container = render(<MoviesList movies={movies} />);
-  const movieElems = container.getAllByRole('listitem');
-
-  expect(movieElems).toHaveLength(movies.length);
-});
-
-test('renders correct MoviesSearchForm', () => {
-  render(<App />);
-  const inputElem = screen.getByPlaceholderText(/Title/i);
-  const searchButton = screen.getByTitle(/Search/i);
-
-  expect(inputElem).toBeInTheDocument();
-  expect(searchButton).toBeInTheDocument();
-});
-
-
-test('check useMovies returns axios response', async () => {
-  mockedAxios.get.mockResolvedValue({
-    data: sampledata,
-    status: 200,
-    statusText: 'OK',
+describe('When MovieDetails is mounted', () => {
+  it('should render correct details of movie', () => {
+    const movie:Movie = {title: 'Earth 1', year: '2001', imdbID: 'tt0000001'};
+    const container = render(<MovieDetails movie={movie} />);
+  
+    const titleElem = container.getByText(new RegExp(movie.title, 'i'));
+    const yearElem = container.getByText(new RegExp(movie.year, 'i'));
+    const imdbElem = container.getByText(new RegExp(movie.imdbID, 'i'));
+  
+    expect(titleElem).toBeInTheDocument();
+    expect(yearElem).toBeInTheDocument();
+    expect(imdbElem).toBeInTheDocument();
+    expect(titleElem).toBeInstanceOf(HTMLHeadingElement);
+    expect(yearElem).toBeInstanceOf(HTMLParagraphElement);
+    expect(imdbElem).toBeInstanceOf(HTMLParagraphElement);
   });
-  const queryClient = new QueryClient();
-  const wrapper = ({ children }:{children:ReactNode}) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+});
 
-  const { result, waitForNextUpdate } = renderHook(() => useMovies(), {wrapper});
-  await waitForNextUpdate();
-  expect(result.current.data).toEqual(sampledata);
+describe('When MoviesList is mounted', () => {
+  it('should render correct list on Movies', () => {
+    const movies:Movie[] = sampledata.data;
+    const container = render(<MoviesList movies={movies} isLoading={false} />);
+    const movieElems = container.getAllByRole('listitem');
+  
+    expect(movieElems).toHaveLength(movies.length);
+  });
+});
+
+
+
+describe('When MoviesSearchForm is used', () => {
+  it('should render correct elements', () => {
+    render(<MoviesSearchForm searchTerm='' onSearch={()=>console} />);
+    const inputElem = screen.getByPlaceholderText(/Title/i);
+    const searchButton = screen.getByTitle(/Search/i);
+
+    expect(inputElem).toBeInTheDocument();
+    expect(searchButton).toBeInTheDocument();
+  });
+
+
+  it('should call onSearch when search button is clicked', () => {
+    const onSearch = jest.fn();
+    render(<MoviesSearchForm searchTerm='' onSearch={onSearch} />);
+    const searchButton = screen.getByTitle(/Search/i);
+    searchButton.click();
+    expect(onSearch).toBeCalled();
+  });
+})
+
+describe('When useMovies is used', () => {
+  it('should return correct data from API', async () => {
+    mockedAxios.get.mockResolvedValue({
+      data: sampledata,
+      status: 200,
+      statusText: 'OK',
+    });
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }:{children:ReactNode}) => (
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    );
+  
+    const { result, waitForNextUpdate } = renderHook(() => useMovies(), {wrapper});
+    await waitForNextUpdate();
+    expect(result.current.data).toEqual(sampledata);
+  });
 });
